@@ -1,32 +1,32 @@
 // world.ts
 
 /**
- * エンティティを一意に識別するための型。実体は単なる数値。
+ * A unique identifier for an entity. Essentially just a number.
  */
 export type Entity = number;
 
 /**
- * システム関数の型定義。Worldインスタンスを引数に取る。
+ * Defines the shape of a system function, which takes a World instance as an argument.
  */
 export type System = (world: World) => void;
 
 /**
- * コンポーネントクラスの型定義。
+ * Defines the type for a component class constructor.
  */
 export type ComponentClass<T> = new (...args: any[]) => T;
 
 
 /**
- * シンプルなイベント発行・購読のためのクラス。
+ * A simple class for emitting and subscribing to events.
  */
 class EventEmitter {
   private listeners: { [event: string]: Function[] } = {};
 
   /**
-   * イベントを購読する。
-   * @param event イベント名
-   * @param callback コールバック関数
-   * @returns 購読を解除するための関数
+   * Subscribes to an event.
+   * @param event The name of the event.
+   * @param callback The callback function.
+   * @returns A function to unsubscribe.
    */
   on(event: string, callback: Function): () => void {
     if (!this.listeners[event]) {
@@ -39,9 +39,9 @@ class EventEmitter {
   }
 
   /**
-   * イベントを発行する。
-   * @param event イベント名
-   * @param args コールバック関数に渡す引数
+   * Emits an event.
+   * @param event The name of the event.
+   * @param args Arguments to pass to the callback functions.
    */
   emit(event: string, ...args: any[]) {
     if (this.listeners[event]) {
@@ -52,8 +52,8 @@ class EventEmitter {
 
 
 /**
- * ECSの全体を管理するWorldクラス。
- * すべてのエンティティ、コンポーネント、システムを保持する。
+ * The World class manages the entire ECS.
+ * It holds all entities, components, and systems.
  */
 export class World {
   public readonly events = new EventEmitter();
@@ -63,8 +63,8 @@ export class World {
   private nextEntityId: Entity = 0;
 
   /**
-   * 新しいエンティティを作成し、一意のIDを返す。
-   * @returns 作成されたエンティティのID
+   * Creates a new entity and returns its unique ID.
+   * @returns The created entity's ID.
    */
   createEntity(): Entity {
     const entity = this.nextEntityId++;
@@ -74,8 +74,8 @@ export class World {
   }
 
   /**
-   * エンティティを破棄する。
-   * @param entity 破棄するエンティティのID
+   * Destroys an entity and all its associated components.
+   * @param entity The ID of the entity to destroy.
    */
   destroyEntity(entity: Entity): void {
     if (this.entities.has(entity)) {
@@ -85,9 +85,9 @@ export class World {
   }
 
   /**
-   * エンティティにコンポーネントを追加する。
-   * @param entity 対象のエンティティID
-   * @param component 追加するコンポーネントのインスタンス
+   * Adds a component instance to an entity.
+   * @param entity The ID of the target entity.
+   * @param component The component instance to add.
    */
   addComponent<T extends object>(entity: Entity, component: T): void {
     const componentMap = this.entities.get(entity);
@@ -99,9 +99,9 @@ export class World {
   }
 
   /**
-   * エンティティからコンポーネントを削除する。
-   * @param entity 対象のエンティティID
-   * @param componentClass 削除するコンポーネントのクラス
+   * Removes a component from an entity by its class.
+   * @param entity The ID of the target entity.
+   * @param componentClass The class of the component to remove.
    */
   removeComponent<T>(entity: Entity, componentClass: ComponentClass<T>): void {
     const componentMap = this.entities.get(entity);
@@ -113,29 +113,29 @@ export class World {
   }
 
   /**
-   * エンティティが特定のコンポーネントを持っているか確認する。
-   * @param entity 対象のエンティティID
-   * @param componentClass 確認するコンポーネントのクラス
-   * @returns コンポーネントを持っていればtrue
+   * Checks if an entity has a specific component.
+   * @param entity The ID of the target entity.
+   * @param componentClass The class of the component to check for.
+   * @returns True if the entity has the component.
    */
   hasComponent<T>(entity: Entity, componentClass: ComponentClass<T>): boolean {
     return this.entities.get(entity)?.has(componentClass) ?? false;
   }
 
   /**
-   * エンティティから特定のコンポーネントを取得する。
-   * @param entity 対象のエンティティID
-   * @param componentClass 取得するコンポーネントのクラス
-   * @returns コンポーネントのインスタンス、またはundefined
+   * Retrieves a specific component instance from an entity.
+   * @param entity The ID of the target entity.
+   * @param componentClass The class of the component to retrieve.
+   * @returns The component instance, or undefined if not found.
    */
   getComponent<T>(entity: Entity, componentClass: ComponentClass<T>): T | undefined {
     return this.entities.get(entity)?.get(componentClass) as T | undefined;
   }
 
   /**
-   * 指定されたコンポーネントクラスをすべて持つエンティティを検索する（クエリ）。
-   * @param componentClasses 検索条件となるコンポーネントクラスの配列
-   * @returns 条件に合致するエンティティIDの配列
+   * Finds all entities that possess a given set of component classes (a query).
+   * @param componentClasses An array of component classes to query for.
+   * @returns An array of entity IDs that match the query.
    */
   query(componentClasses: ComponentClass<any>[]): Entity[] {
     const matchingEntities: Entity[] = [];
@@ -148,16 +148,16 @@ export class World {
   }
 
   /**
-   * システムをWorldに登録する。
-   * @param system 登録するシステム関数
+   * Registers a system with the World.
+   * @param system The system function to register.
    */
   addSystem(system: System): void {
     this.systems.push(system);
   }
 
   /**
-   * 登録されたすべてのシステムを順に実行する。
-   * これを毎フレーム呼び出すことで、Worldの状態が更新される。
+   * Executes all registered systems in order.
+   * Calling this every frame updates the state of the World.
    */
   run(): void {
     for (const system of this.systems) {
